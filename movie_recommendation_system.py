@@ -25,26 +25,26 @@ from sklearn.metrics import mean_squared_error
 Import Data
 """
 
-# movies = pd.read_csv(r'D:\Capstone\dataset\movies.csv')
+# movies = pd.read_csv('movies.csv')
 movies = pd.DataFrame()
 
 for i in range(2):
-    file_path = f'D:/Capstone/dataset/movies_{i}.csv'
+    file_path = f'movies_{i}.csv'
     split = pd.read_csv(file_path)
     movies = pd.concat([movies, split], ignore_index=True)
 
-ratings = pd.read_csv(r'D:\Capstone\dataset\ratings.csv')
-links = pd.read_csv(r'D:\Capstone\dataset\links.csv')
-keywords = pd.read_csv(r'D:\Capstone\dataset\keywords.csv')
+ratings = pd.read_csv('ratings.csv')
+links = pd.read_csv('links.csv')
+keywords = pd.read_csv('keywords.csv')
 
 credits = pd.DataFrame()
 
 for i in range(11):
-    file_path = f'D:/Capstone/dataset/credits_{i}.csv'
+    file_path = f'credits_{i}.csv'
     split = pd.read_csv(file_path)
     credits = pd.concat([credits, split], ignore_index=True)
 
-movies_m = pd.read_csv(r'D:\Capstone\dataset\movies_m.csv')
+movies_m = pd.read_csv('movies_m.csv')
 print(movies.head())
 print(ratings.head())
 print(links.head())
