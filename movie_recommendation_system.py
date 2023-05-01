@@ -240,7 +240,7 @@ Content Based Filtering
 """
 
 # Correlate the links to movies
-links_small = pd.read_csv(r'D:\Capstone\dataset\links_small.csv')
+links_small = pd.read_csv('links_small.csv')
 links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
 movies['id'] = pd.to_numeric(movies['id'], errors='coerce')
 movies.dropna(subset=['id'], inplace=True)
