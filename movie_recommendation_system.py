@@ -1,4 +1,5 @@
 # !pip install surprise
+import pickle
 import surprise
 import pandas as pd
 from typing import List
