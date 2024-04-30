@@ -80,46 +80,37 @@ if option == "Get Recommendations":
                     recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
                     return recommend
                 except KeyError:
+                    st.warning('The user id you entered does not exist in our database.')
                     return None
 
             if get_recommendations2:
-                if user_id:
+                if user_id is not None:
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)
                     if recommendations2 is not None:
                         st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
-                    else:
-                        st.warning('The user id you entered does not exist.')
-                else:
-                    st.warning('Please enter a user id.')
 
     with right:
         with st.expander("Hybrid"):
 
-            user_id2 = st.text_input("User id")
+            user_id2 = st.number_input("User id")
             movie_title2 = st.text_input("Movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
 
             def hy(user_id2, movie_title2, n=numbers_of_return):
                 try:
-                    if user_id2 and movie_title2:
-                        recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
-                        return recommend
-                    else:
-                        return None
+                    recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
+                    return recommend
                 except KeyError:
+                    st.warning('The user id or movie you entered is not found in our database. '
+                               'Please make sure you have entered the correct information.')
                     return None
 
             if get_recommendations3:
-                if user_id2 and movie_title2:
+                if user_id2 is not None and movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
                     if recommendations3 is not None:
                         st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
-                    else:
-                        st.warning('The user id or movie you entered is not found in our database. '
-                                   'Please make sure you have entered the correct information.')
-                else:
-                    st.warning('Please enter a user id and a movie title.')
 
 if option == "EDA Parts":
     from PIL import Image
