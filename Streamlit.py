@@ -76,8 +76,11 @@ if option == "Get Recommendations":
             get_recommendations2 = st.button('Get Recommendations-2 :tv:')
 
             def cf(user_id, k=5, n=numbers_of_return):
-                recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
-                return recommend
+                try:
+                    recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
+                    return recommend
+                except KeyError:
+                    return None
 
             if get_recommendations2:
                 if user_id:
