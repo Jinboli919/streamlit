@@ -93,8 +93,8 @@ if option == "Get Recommendations":
     with right:
         with st.expander("Hybrid"):
 
-            user_id2 = st.number_input("User id")
-            movie_title2 = st.text_input("Movie title")
+            user_id2 = st.number_input("Please input user id", step=1)
+            movie_title2 = st.text_input("Please input movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
 
