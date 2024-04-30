@@ -1,6 +1,4 @@
 # !pip install surprise
-import pickle
-import surprise
 import pandas as pd
 from typing import List
 import ast
@@ -9,14 +7,17 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import matplotlib.patches as mpatches
 import seaborn as sns
-
+from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 from scipy import stats
 from ast import literal_eval
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from nltk.stem.snowball import SnowballStemmer
-
+import pandas as pd
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.model_selection import train_test_split
@@ -26,8 +27,7 @@ from sklearn.metrics import mean_squared_error
 """
 Import Data
 """
-
-# movies = pd.read_csv('movies.csv')
+# The csv file 'movies' and 'crew' are too big, so I split them first and concatenate them
 movies = pd.DataFrame()
 
 for i in range(2):
@@ -39,18 +39,20 @@ ratings = pd.read_csv('ratings.csv')
 links = pd.read_csv('links.csv')
 keywords = pd.read_csv('keywords.csv')
 
-credits = pd.DataFrame()
+crew = pd.DataFrame()
 
 for i in range(11):
-    file_path = f'credits_{i}.csv'
+    file_path = f'crew_{i}.csv'
     split = pd.read_csv(file_path)
-    credits = pd.concat([credits, split], ignore_index=True)
+    crew = pd.concat([crew, split], ignore_index=True)
 
 movies_m = pd.read_csv('movies_m.csv')
 print(movies.head())
 print(ratings.head())
+print(crew.head())
 print(links.head())
 print(keywords.head())
+print(movies_m.head())
 
 
 """
@@ -97,20 +99,223 @@ movies['year'] = movies['release_date'].apply(extract_year)
 
 
 
+"""
+Draw a histogram plot to show the most prolific movie genres
+"""
+
+# Define function to get counts of each category in a column
+def get_counts(df, column_name: str, categories: list):
+    """
+    Returns the count of each category in a column of a DataFrame.
+    """
+    counts = {}
+    for cat in categories:
+        counts[cat] = df[column_name].apply(lambda x: cat in x).sum()
+    return counts
+
+# Get the base counts for each category and sort them by counts
+genres = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama',
+          'Family', 'Fantasy', 'Foreign', 'History', 'Horror', 'Music', 'Mystery', 'Romance',
+          'Science Fiction', 'TV Movie', 'Thriller', 'War', 'Western']
+
+base_counts = get_counts(movies, 'genres', genres)
+base_counts = pd.DataFrame(index=base_counts.keys(),
+                           data=base_counts.values(),
+                           columns=['Counts'])
+base_counts.sort_values(by='Counts', inplace=True)
+
+# Plot the chart which shows top genres and separate by color where genre < 3000
+colors=['#a5a5a5' if i<3000 else '#2ecc71' for i in  base_counts.Counts]
+
+plt.figure(figsize=(12,8))
+plt.bar(x=base_counts.index, height=base_counts.Counts, color=colors)
+plt.title('Most prolific movie Genres')
+plt.xticks(rotation=45, ha='right')
+plt.subplots_adjust(bottom=0.25)
+plt.xlabel('Genres')
+plt.ylabel('Numbers of movies')
+
+# Add the color legend of counts
+legend_elements = [Patch(facecolor='#a5a5a5', label='Counts < 3000'),
+                   Patch(facecolor='#2ecc71', label='Counts >= 3000')]
+plt.legend(handles=legend_elements, loc='upper left')
+plt.show()
 
 
+"""
+Draw a heatmap to show the movies releases by month and year in this century
+"""
+
+movies['year'] = pd.to_datetime(movies['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
+
+month_order = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+day_order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+def get_month(x):
+    try:
+        return month_order[int(str(x).split('-')[1]) - 1]
+    except:
+        return np.nan
+
+def get_day(x):
+    try:
+        year, month, day = (int(i) for i in x.split('-'))
+        answer = datetime.date(year, month, day).weekday()
+        return day_order[answer]
+    except:
+        return np.nan
 
 
+movies['day'] = movies['release_date'].apply(get_day)
+movies['month'] = movies['release_date'].apply(get_month)
+
+movies[movies['year'] != 'NaT'][['title', 'year']].sort_values('year').head(10)
+
+months = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6, 'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12}
+movies1 = movies.copy()
+movies1['year'] = movies1[movies1['year'] != 'NaT']['year'].astype(int)
+movies1 = movies1[movies1['year'] >=2000]
+heatmap = pd.pivot_table(data=movies1, index='month', columns='year', aggfunc='count', values='title')
+heatmap = heatmap.fillna(0)
+
+sns.set(font_scale=1)
+f, ax = plt.subplots(figsize=(16, 8))
+sns.heatmap(heatmap, annot=True, linewidths=.5, ax=ax, cmap='YlOrRd', fmt='n', yticklabels=month_order, xticklabels=heatmap.columns.astype(int))
+ax.set_title('Heatmap of Movie Releases by Month and Year', fontsize=20, fontweight='bold')
+plt.xticks(rotation=0)
+plt.show()
 
 
+"""
+Draw a pie chart to show the top 15 popular genres by vote_count
+"""
+# Create a new DataFrame with the vote count and rating information
+genres_df = movies[['genres', 'vote_count', 'vote_average']].explode('genres')
+genres_df = genres_df.groupby('genres').agg({'vote_count': 'sum', 'vote_average': 'mean'}).reset_index()
+
+# Get the top 15 genres by vote count
+top_genres = genres_df.sort_values('vote_count', ascending=False).head(15)
+
+# Create a pie chart of the top genres by vote count
+fig, ax = plt.subplots(figsize=(10, 8))
+wedges, texts, autotexts = ax.pie(top_genres['vote_count'], colors=[f'C{i}' for i in range(len(top_genres))], autopct='%1.1f%%')
+
+# Create a legend for the genres' colors
+handles = []
+for i, genre in enumerate(top_genres['genres']):
+    handles.append(mpatches.Patch(color=f"C{i}", label=genre))
+plt.legend(handles=handles, bbox_to_anchor=(1.1, 0.8), loc='upper left', fontsize=12)
+
+# Show the genres' names with the percentages in the legend
+legend_labels = []
+for i in range(len(texts)):
+    label = f"{top_genres.iloc[i]['genres']}: {autotexts[i].get_text()}"
+    legend_labels.append(label)
+ax.legend(wedges, legend_labels, bbox_to_anchor=(1.25, 1), title='Genres', loc='upper right', fontsize=10)
+
+plt.title('Top 15 Popular Genres by Vote_count')
+plt.show()
 
 
+"""
+Draw a bar chart to show the top 15 genres with the highest average ratings by vote_average.
+"""
+# Get the top 15 genres by vote average
+top_genres_a = genres_df.sort_values('vote_average', ascending=False).head(15)
+top_genres_a = top_genres_a.sort_values('vote_average', ascending=True)
+
+# Create a horizontal bar chart of the top genres by vote average
+fig, ax = plt.subplots(figsize=(10, 8))
+ax.barh(top_genres_a['genres'], top_genres_a['vote_average'], color=[f'C{i}' for i in range(len(top_genres))])
+
+plt.title('Top 15 Genres with the Highest Average Ratings')
+plt.xlabel('Average Rating')
+plt.ylabel('Genres')
+plt.show()
 
 
+"""
+Draw a bar chart to show the top 15 popular genres by popularity
+"""
+# Clean the popularity column
+movies['popularity'] = pd.to_numeric(movies['popularity'], errors='coerce').fillna(0)
+
+# Create a new DataFrame with the vote count and popularity information
+genres_df = movies[['genres', 'popularity']].explode('genres')
+genres_df = genres_df.groupby('genres').agg({'popularity': 'mean'}).reset_index()
+
+# Get the top 15 genres by popularity and sort them in descending order
+top_genres = genres_df.sort_values('popularity', ascending=False).head(15)
+top_genres = top_genres.sort_values('popularity', ascending=True)
+
+# Create a bar chart of the top genres by popularity
+fig, ax = plt.subplots(figsize=(10, 8))
+ax.barh(top_genres['genres'], top_genres['popularity'], color=[f'C{i}' for i in range(len(top_genres))])
+
+plt.title('Top 15 Popular Genres by Popularity')
+plt.xlabel('Popularity')
+plt.show()
 
 
+"""
+Draw a wordcloud plot to show the most common words in movie titles
+"""
+
+movies['title'] = movies['title'].astype('str')
+movies['overview'] = movies['overview'].astype('str')
+
+title_corpus = ' '.join(movies['title'])
+overview_corpus = ' '.join(movies['overview'])
 
 
+title_wordcloud = WordCloud(
+    stopwords=STOPWORDS,
+    background_color='white',
+    colormap='Set2',
+    height=600,
+    width=800
+).generate(title_corpus)
+
+
+plt.figure(figsize=(12,6))
+plt.imshow(title_wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.title("Movie Titles Wordcloud", fontsize=20, fontweight='bold', color='darkblue')
+plt.show()
+
+
+"""
+Draw a wordcloud plot to show the most common words in movie overviews
+"""
+
+overview_wordcloud = WordCloud(
+    stopwords=STOPWORDS,
+    background_color='white',
+    colormap='Set2',
+    height=600,
+    width=800
+).generate(overview_corpus)
+
+plt.figure(figsize=(12,6))
+plt.imshow(overview_wordcloud, interpolation='bilinear')
+plt.axis('off')
+plt.title("Movie Overview Wordcloud", fontsize=20, fontweight='bold', color='darkblue')
+plt.show()
+
+
+"""
+Draw a scatter plot to show the distribution of movie mean rating and the number of ratings
+"""
+
+data = pd.merge(ratings, movies_m, on='movieId')
+
+agg_ratings = data.groupby('title').agg(mean_rating = ('rating', 'mean'),
+                    number_of_ratings = ('rating', 'count')).reset_index()
+
+plot = sns.jointplot(x='mean_rating', y='number_of_ratings', data=agg_ratings)
+plot.set_axis_labels("Mean Rating", "Number of Ratings", fontsize=10)
+plot.fig.suptitle("Distribution of Mean Rating and Number of Ratings", fontsize=12)
+plot.fig.subplots_adjust(top=0.95)
 
 
 
@@ -242,13 +447,12 @@ Content Based Filtering
 """
 
 # Correlate the links to movies
-links_small = pd.read_csv('links_small.csv')
-links_small = links_small[links_small['tmdbId'].notnull()]['tmdbId'].astype('int')
+links = links[links['tmdbId'].notnull()]['tmdbId'].astype('int')
 movies['id'] = pd.to_numeric(movies['id'], errors='coerce')
 movies.dropna(subset=['id'], inplace=True)
 movies['id'] = movies['id'].astype('int')
 
-movies_l = movies[movies['id'].isin(links_small)]
+movies_l = movies[movies['id'].isin(links)]
 print(movies_l)
 
 # 1. Using the descriptions and taglines of movies to recommend
@@ -315,14 +519,14 @@ keywords['id'] = pd.to_numeric(keywords['id'], errors='coerce')
 keywords.dropna(subset=['id'], inplace=True)
 keywords['id'] = keywords['id'].astype('int')
 
-credits['id'] = pd.to_numeric(credits['id'], errors='coerce')
-credits.dropna(subset=['id'], inplace=True)
-credits['id'] = credits['id'].astype('int')
+crew['id'] = pd.to_numeric(crew['id'], errors='coerce')
+crew.dropna(subset=['id'], inplace=True)
+crew['id'] = crew['id'].astype('int')
 
-movies = movies.merge(credits, on='id')
+movies = movies.merge(crew, on='id')
 movies = movies.merge(keywords, on='id')
 
-movies_k = movies[movies['id'].isin(links_small)]
+movies_k = movies[movies['id'].isin(links)]
 print(movies_k.shape)
 
 
@@ -541,9 +745,6 @@ print(content_recommendations_improved('The Shawshank Redemption',n=10))
 Collaborative Filtering
 """
 
-
-
-
 """
 User-Based Collaborative Filtering Recommendation
 """
@@ -591,10 +792,6 @@ print(recommendations)
 """
 Item-Based Collaborative Filtering Recommendation
 """
-
-
-
-
 
 # Build the rating matrix
 ratings_matrix = movie_ratings.pivot_table(index='userId', columns='movieId', values='rating', fill_value=0)
@@ -645,19 +842,220 @@ print(recommendations)
 Matrix Factorization
 """
 
+"""
+MLP Approach
+"""
+
+
+data = pd.merge(ratings, movies_m, on='movieId')
+
+# create user and item input features
+user_input = keras.Input(shape=(1,))
+item_input = keras.Input(shape=(1,))
+
+# create embedding layers
+user_embedding = layers.Embedding(input_dim=data['userId'].max()+1, output_dim=50, input_length=1)(user_input)
+item_embedding = layers.Embedding(input_dim=data['movieId'].max()+1, output_dim=50, input_length=1)(item_input)
+
+# flatten the embedding layers
+user_flatten = layers.Flatten()(user_embedding)
+item_flatten = layers.Flatten()(item_embedding)
+
+# concatenate the user and item features
+concat = layers.Concatenate()([user_flatten, item_flatten])
+
+# add batch normalization layer
+bn = layers.BatchNormalization()(concat)
+
+# add dense layers for the neural network
+dense1 = layers.Dense(256, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01))(bn)
+dense2 = layers.Dense(128, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01))(dense1)
+dense3 = layers.Dense(64, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01))(dense2)
+dense4 = layers.Dense(32, activation='relu', kernel_regularizer=keras.regularizers.l2(0.01))(dense3)
+
+# add the output layer
+output_layer = layers.Dense(1)(dense4)
+
+# create the model
+model = keras.Model(inputs=[user_input, item_input], outputs=output_layer)
+model.compile(optimizer='sgd', loss='mean_absolute_error', metrics=[tf.keras.metrics.RootMeanSquaredError()])
+
+# split the data into training and testing datasets
+train_data = data.sample(frac=0.8, random_state=42)
+test_data = data.drop(train_data.index)
+
+# train the model
+reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=0.001)
+history = model.fit(x=[train_data['userId'], train_data['movieId']], y=train_data['rating'], epochs=15, batch_size=128, validation_data=([test_data['userId'], test_data['movieId']], test_data['rating']), callbacks=[reduce_lr])
+
+import matplotlib.pyplot as plt
+
+# plot the training and testing loss and metrics
+plt.plot(history.history['loss'], label='train_loss')
+plt.plot(history.history['val_loss'], label='test_loss')
+plt.plot(history.history['root_mean_squared_error'], label='train_rmse')
+plt.plot(history.history['val_root_mean_squared_error'], label='test_rmse')
+plt.title('MLP Performance')
+plt.xlabel('Epoch')
+plt.ylabel('Metric')
+plt.legend()
+plt.show()
+
+# evaluate the model on the test data
+results = model.evaluate([test_data['userId'], test_data['movieId']], test_data['rating'])
+print(f'Test MAE: {results[0]}, Test RMSE: {results[1]}')
+
+
+# get the predicted ratings
+predictions = model.predict([test_data['userId'], test_data['movieId']])
+
+# create a scatter plot of predicted vs actual ratings
+plt.scatter(x=test_data['rating'], y=predictions, alpha=0.5)
+plt.title('MLP Performance: Actual Ratings VS. Predicted Ratings')
+plt.xlabel('Actual Ratings')
+plt.ylabel('Predicted Ratings')
+plt.show()
+
+
+
 
 """
 SVD (Singular Value Decomposition) Approach
 """
 
-# read the SVD model
+from surprise import Reader, Dataset, SVD
+from surprise.model_selection import GridSearchCV, train_test_split
+from surprise.accuracy import rmse, mae
+from sklearn.metrics import f1_score
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+reader = Reader()
+ratings = pd.read_csv('ratings.csv')
+data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
+
+trainset, testset = train_test_split(data, test_size=0.2)
+
+# Define the parameter grid to search
+param_grid = {'n_factors': [10, 30, 50, 70, 90, 100, 150],
+              'n_epochs': [30, 40, 50],
+              'lr_all': [0.001, 0.005, 0.01, 0.1],
+              'reg_all': [0.01, 0.02, 0.04, 0.06]}
+
+# Perform grid search with cross-validation
+gs = GridSearchCV(SVD, param_grid, measures=['rmse', 'mae'], cv=5, n_jobs=-1, return_train_measures=True)
+gs.fit(data)
+
+# Print the best RMSE score and the corresponding parameters
+print('Best RMSE is:',gs.best_score['rmse'])
+print('Best MAE is:',gs.best_score['mae'])
+print('Best parameters are:',gs.best_params['rmse'])
+
+# Extract the results from the grid search
+results = gs.cv_results
+factors = np.array(param_grid['n_factors'])
+epochs = np.array(param_grid['n_epochs'])
+lrs = np.array(param_grid['lr_all'])
+regs = np.array(param_grid['reg_all'])
+
+# Compute the precision scores
+precision_scores = []
+for params, mean_test_score, _ in zip(results['params'], results['mean_test_rmse'], results['std_test_rmse']):
+    svd = SVD(**params)
+    svd.fit(trainset)
+    predictions = svd.test(testset)
+    y_true = [int(pred.r_ui >= 3) for pred in predictions]
+    y_pred = [int(pred.est >= 3) for pred in predictions]
+    score = f1_score(y_true, y_pred)
+    precision_scores.append(score)
+
+# Reshape and plot the precision scores
+precision_scores = np.array(precision_scores)
+precision_scores = np.reshape(precision_scores, (len(factors), len(epochs), len(lrs), len(regs)))
+precision_scores = np.mean(precision_scores, axis=(2, 3))
+for i, epoch in enumerate(epochs):
+    plt.plot(factors, precision_scores[:,i], label=f'n_epochs={epoch}')
+plt.title('SVD Performance: Precision Against Number of Factors')
+plt.xlabel('n_factors')
+plt.ylabel('Precision')
+plt.legend()
+plt.show()
+
+# Plot the RMSE scores
+rmse_scores = results['mean_test_rmse']
+rmse_scores = np.reshape(rmse_scores, (len(factors), len(epochs), len(lrs), len(regs)))
+rmse_scores = np.mean(rmse_scores, axis=(2, 3))
+for i, epoch in enumerate(epochs):
+    plt.plot(factors, rmse_scores[:,i], label=f'n_epochs={epoch}')
+plt.title('SVD Performance: RMSE Against Number of Factors')
+plt.xlabel('n_factors')
+plt.ylabel('RMSE')
+plt.legend()
+plt.show()
+
+# Plot the MAE scores
+mae_scores = results['mean_test_mae']
+mae_scores = np.reshape(mae_scores, (len(factors), len(epochs), len(lrs), len(regs)))
+mae_scores = np.mean(mae_scores, axis=(2, 3))
+for i, epoch in enumerate(epochs):
+    plt.plot(factors, mae_scores[:,i], label=f'n_epochs={epoch}')
+plt.title('SVD Performance: MAE Against Number of Factors')
+plt.xlabel('n_factors')
+plt.ylabel('MAE')
+plt.legend()
+plt.show()
+
+
+# Train the model on the full dataset with the best parameters
+svd = SVD(n_factors=gs.best_params['rmse']['n_factors'],
+          n_epochs=gs.best_params['rmse']['n_epochs'],
+          lr_all=gs.best_params['rmse']['lr_all'],
+          reg_all=gs.best_params['rmse']['reg_all'])
+trainset = data.build_full_trainset()
+svd.fit(trainset)
+
+# Get predictions for the testset
+predictions = svd.test(testset)
+
+# Extract the actual ratings and predicted ratings
+actual_ratings = [pred.r_ui for pred in predictions]
+predicted_ratings = [pred.est for pred in predictions]
+
+# Plot the scatter plot of actual ratings vs. predicted ratings
+plt.scatter(actual_ratings, predicted_ratings, alpha=0.5)
+plt.xlabel('Actual Ratings')
+plt.ylabel('Predicted Ratings')
+plt.title('SVD Performance: Actual Ratings VS. Predicted Ratings')
+plt.show()
+
+
+
+
+# Make a prediction for user 1 and movie 302 with a rating of 3
+prediction = svd.predict(1, 3671, 3)
+print(prediction)
+
+
+import pickle
+
+# save the model
+with open('svd_model.pkl', 'wb') as f:
+    pickle.dump(svd, f)
+
+
+
+
+
+"""
+Hybrid Model
+"""
+
+
 with open('svd_model.pkl', 'rb') as f:
     svd = pickle.load(f)
 
-
-    
-    
-    
 # link the movieId to id in the movies.csv
 integrate_id = pd.read_csv('links_small.csv')[['movieId', 'tmdbId']]
 
@@ -700,7 +1098,7 @@ def hybrid(userId, title, n):
     movies['Predicted rating'] = movies['movieId'].apply(lambda x: svd.predict(userId, indices_integrate.loc[x]['movieId']).est)
     # sort the movies in descending order of predicted rating
     movies = movies[['movieId', 'title', 'vote_count', 'vote_average', 'genres', 'director', 'cast', 'year', 'keywords', 'Predicted rating']].sort_values('Predicted rating', ascending=False)
-    
+
     return movies.head(n)
 
 # Test
