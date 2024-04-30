@@ -98,8 +98,11 @@ if option == "Get Recommendations":
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
 
             def hy(user_id2, movie_title2, n=numbers_of_return):
-                recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
-                return recommend
+                try:
+                    recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
+                    return recommend
+                except KeyError:
+                    return None
 
             if get_recommendations3:
                 if user_id2 and movie_title2:
