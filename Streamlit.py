@@ -45,16 +45,16 @@ if option == "Get Recommendations":
             get_recommendations = st.button('Get Recommendations-1 :tv:')
 
             def content(movie_title, n):
-                try:
-                    recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
-                    return recommend
-                except ValueError:
-                    st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
+                return recommend
 
             if get_recommendations:
                 if movie_title:
                     recommendations = content(movie_title, n=numbers_of_return)[:numbers_of_return]
-                    st.write(pd.DataFrame(recommendations))
+                    if recommendations:
+                        st.write(pd.DataFrame(recommendations))
+                    else:
+                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
                 else:
                     st.warning('Please enter a movie title.')
 
@@ -70,16 +70,16 @@ if option == "Get Recommendations":
             get_recommendations2 = st.button('Get Recommendations-2 :tv:')
 
             def cf(user_id, k=5, n=numbers_of_return):
-                try:
-                    recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
-                    return recommend
-                except ValueError:
-                    st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
+                return recommend
 
             if get_recommendations2:
                 if user_id:
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)[:numbers_of_return]
-                    st.write(pd.DataFrame(recommendations2))
+                    if recommendations2:
+                        st.write(pd.DataFrame(recommendations2))
+                    else:
+                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
                 else:
                     st.warning('Please enter a user id.')
 
@@ -91,16 +91,16 @@ if option == "Get Recommendations":
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
 
             def hy(user_id2, movie_title2, n=numbers_of_return):
-                try:
-                    recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
-                    return recommend
-                except ValueError:
-                    st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
+                return recommend
 
             if get_recommendations3:
                 if user_id2 and movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)[:numbers_of_return]
-                    st.write(pd.DataFrame(recommendations3))
+                    if recommendations3:
+                        st.write(pd.DataFrame(recommendations3))
+                    else:
+                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
                 else:
                     st.warning('Please enter a user id and a movie title.')
 
@@ -162,11 +162,8 @@ if option == "TOP 20 MOVIES in Popular Genres":
     data = {'Genres': Genres}
 
     def top20(genres, percentile=0.8, genre_name=Genres):
-        try:
-            top = movie_recommendation_system.build_top(genres, percentile=0.8, genre_name=Genres)
-            return top
-        except ValueError:
-            st.warning('The genre you selected does not have enough movies in our database. Please try another genre.')
+        top = movie_recommendation_system.build_top(genres, percentile=0.8, genre_name=Genres)
+        return top
 
     if get_top_20:
         if Genres:
