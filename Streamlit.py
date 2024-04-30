@@ -55,7 +55,7 @@ if option == "Get Recommendations":
             if get_recommendations:
                 if movie_title:
                     recommendations = content(movie_title, n=numbers_of_return)
-                    if recommendations:
+                    if recommendations is not None:
                         st.write(pd.DataFrame(recommendations)[:numbers_of_return])
                     else:
                         st.warning('The movie you entered is not found in our database. '
@@ -82,7 +82,7 @@ if option == "Get Recommendations":
             if get_recommendations2:
                 if user_id:
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)
-                    if recommendations2:
+                    if recommendations2 is not None:
                         st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
                     else:
                         st.warning('The user id you entered does not exist in our database.')
@@ -104,7 +104,7 @@ if option == "Get Recommendations":
             if get_recommendations3:
                 if user_id2 and movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
-                    if recommendations3:
+                    if recommendations3 is not None:
                         st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
                     else:
                         st.warning('The user id or movie you entered is not found in our database. '
