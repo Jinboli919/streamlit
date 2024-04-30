@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import pickle
 import movie_recommendation_system
 
 st.set_page_config(page_title="Movie Recommendation System", layout="centered", page_icon=":film_projector:")
