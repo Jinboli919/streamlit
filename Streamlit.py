@@ -88,7 +88,7 @@ if option == "Get Recommendations":
                     if recommendations2 is not None:
                         st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
                     else:
-                        st.warning('The user id you entered does not exist in our database.')
+                        st.warning('The user id you entered does not exist.')
                 else:
                     st.warning('Please enter a user id.')
 
