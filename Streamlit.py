@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import pickle
 import movie_recommendation_system
 
 st.set_page_config(page_title="Movie Recommendation System", layout="centered", page_icon=":film_projector:")
@@ -88,14 +87,12 @@ if option == "Get Recommendations":
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)
                     if recommendations2 is not None:
                         st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
-                else:
-                    st.warning('Please enter a user id.')
 
     with right:
         with st.expander("Hybrid"):
 
-            user_id2 = st.number_input("Please input user id", step=1)
-            movie_title2 = st.text_input("Please input movie title")
+            user_id2 = st.number_input("Please input User id", step=1)
+            movie_title2 = st.text_input("Please input Movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
 
@@ -109,7 +106,7 @@ if option == "Get Recommendations":
                     return None
 
             if get_recommendations3:
-                if user_id2 is not None or movie_title2:
+                if user_id2 is not None and movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
                     if recommendations3 is not None:
                         st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
