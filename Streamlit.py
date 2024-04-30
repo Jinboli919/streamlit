@@ -108,7 +108,7 @@ if option == "Get Recommendations":
                     return None
 
             if get_recommendations3:
-                if user_id2 is not None and movie_title2:
+                if user_id2 is not None or movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
                     if recommendations3 is not None:
                         st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
