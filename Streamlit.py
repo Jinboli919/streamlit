@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import pickle
 import movie_recommendation_system
 
 st.set_page_config(page_title="Movie Recommendation System", layout="centered", page_icon=":film_projector:")
@@ -34,6 +35,7 @@ if option == "Get Recommendations":
 
     with left:
         with st.expander("Content-Based"):
+
             movie_title = st.text_input("Please input movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=10)
             st.write("\n")
@@ -44,24 +46,26 @@ if option == "Get Recommendations":
             get_recommendations = st.button('Get Recommendations-1 :tv:')
 
             def content(movie_title, n):
-                if movie_title in movie_recommendation_system.content_recommendations_improved.index:
+                try:
                     recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
                     return recommend
-                else:
+                except KeyError:
                     return None
 
             if get_recommendations:
                 if movie_title:
                     recommendations = content(movie_title, n=numbers_of_return)
-                    if recommendations is not None:
+                    if recommendations:
                         st.write(pd.DataFrame(recommendations)[:numbers_of_return])
                     else:
-                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                        st.warning('The movie you entered is not found in our database. '
+                                   'Please make sure you have entered the correct movie title (including letter case).')
                 else:
                     st.warning('Please enter a movie title.')
 
     with mid:
         with st.expander("Collaborative Filtering"):
+
             user_id = st.number_input("Please input user id", step=1)
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=11)
             st.write("\n")
@@ -77,13 +81,17 @@ if option == "Get Recommendations":
 
             if get_recommendations2:
                 if user_id:
-                    recommendations2 = cf(user_id, k=5, n=numbers_of_return)[:numbers_of_return]
-                    st.write(pd.DataFrame(recommendations2))
+                    recommendations2 = cf(user_id, k=5, n=numbers_of_return)
+                    if recommendations2:
+                        st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
+                    else:
+                        st.warning('The user id you entered does not exist in our database.')
                 else:
                     st.warning('Please enter a user id.')
 
     with right:
         with st.expander("Hybrid"):
+
             user_id2 = st.text_input("User id")
             movie_title2 = st.text_input("Movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
@@ -95,8 +103,12 @@ if option == "Get Recommendations":
 
             if get_recommendations3:
                 if user_id2 and movie_title2:
-                    recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)[:numbers_of_return]
-                    st.write(pd.DataFrame(recommendations3))
+                    recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
+                    if recommendations3:
+                        st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
+                    else:
+                        st.warning('The user id or movie you entered is not found in our database. '
+                                   'Please make sure you have entered the correct information.')
                 else:
                     st.warning('Please enter a user id and a movie title.')
 
@@ -154,8 +166,6 @@ if option == "TOP 20 MOVIES in Popular Genres":
     st.write("\n")
     st.write("\n")
     get_top_20 = st.button('Get Top 20 movies :tv:')
-
-    data = {'Genres': Genres}
 
     def top20(genres, percentile=0.8, genre_name=Genres):
         top = movie_recommendation_system.build_top(genres, percentile=0.8, genre_name=Genres)
