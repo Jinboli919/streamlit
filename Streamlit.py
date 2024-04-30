@@ -186,4 +186,3 @@ if option == "TOP 20 MOVIES in Popular Genres":
             st.write(pd.DataFrame(top_20))
         else:
             st.warning('Please select a genre.')
-            
