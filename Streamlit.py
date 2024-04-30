@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import pickle
 import movie_recommendation_system
 
 st.set_page_config(page_title="Movie Recommendation System", layout="centered", page_icon=":film_projector:")
@@ -45,14 +44,17 @@ if option == "Get Recommendations":
             get_recommendations = st.button('Get Recommendations-1 :tv:')
 
             def content(movie_title, n):
-                recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
-                return recommend
+                if movie_title in movie_recommendation_system.content_recommendations_improved.index:
+                    recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
+                    return recommend
+                else:
+                    return None
 
             if get_recommendations:
                 if movie_title:
-                    recommendations = content(movie_title, n=numbers_of_return)[:numbers_of_return]
-                    if recommendations:
-                        st.write(pd.DataFrame(recommendations))
+                    recommendations = content(movie_title, n=numbers_of_return)
+                    if recommendations is not None:
+                        st.write(pd.DataFrame(recommendations)[:numbers_of_return])
                     else:
                         st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
                 else:
@@ -76,10 +78,7 @@ if option == "Get Recommendations":
             if get_recommendations2:
                 if user_id:
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)[:numbers_of_return]
-                    if recommendations2:
-                        st.write(pd.DataFrame(recommendations2))
-                    else:
-                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                    st.write(pd.DataFrame(recommendations2))
                 else:
                     st.warning('Please enter a user id.')
 
@@ -97,10 +96,7 @@ if option == "Get Recommendations":
             if get_recommendations3:
                 if user_id2 and movie_title2:
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)[:numbers_of_return]
-                    if recommendations3:
-                        st.write(pd.DataFrame(recommendations3))
-                    else:
-                        st.warning('The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case).')
+                    st.write(pd.DataFrame(recommendations3))
                 else:
                     st.warning('Please enter a user id and a movie title.')
 
