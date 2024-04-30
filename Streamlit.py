@@ -66,7 +66,7 @@ if option == "Get Recommendations":
     with mid:
         with st.expander("Collaborative Filtering"):
 
-            user_id = st.number_input("Please input user id", step=1)
+            user_id = st.number_input("Please input user id", step=1, format="%d")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=11)
             st.write("\n")
             st.write("\n")
@@ -80,7 +80,7 @@ if option == "Get Recommendations":
                     recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
                     return recommend
                 except KeyError:
-                    st.warning('The user id you entered does not exist in our database.')
+                    st.warning('The user id you entered does not exist.')
                     return None
 
             if get_recommendations2:
@@ -92,7 +92,7 @@ if option == "Get Recommendations":
     with right:
         with st.expander("Hybrid"):
 
-            user_id2 = st.number_input("User id")
+            user_id2 = st.number_input("User id", format="%d")
             movie_title2 = st.text_input("Movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
