@@ -12,7 +12,7 @@ option = st.sidebar.radio(
 st.sidebar.subheader(' :cinema: - About this Project')
 st.sidebar.info("""     
 -   With the increasing availability of movies on various platforms, the challenge of selecting the most preferred movies for users has become a critical issue in the entertainment industry.
--   The project aims to build a movie recommendation system to produce a ranked list of movies to provide personalized recommendations based on users’ preferences, rating history, and other relevant factors. """)
+-   The project aims to build a movie recommendation system to produce a ranked list of movies to provide personalized recommendations based on users’ preferences, rating history and other relevant factors. """)
 
 
 if option == "Get Recommendations":
@@ -34,6 +34,7 @@ if option == "Get Recommendations":
 
     with left:
         with st.expander("Content-Based"):
+
             movie_title = st.text_input("Please input movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=10)
             st.write("\n")
@@ -47,21 +48,23 @@ if option == "Get Recommendations":
                 try:
                     recommend = movie_recommendation_system.content_recommendations_improved(movie_title, n)
                     return recommend
-                except:
-                    return "The movie you entered is not found in our database. Please make sure you have entered the correct movie title (including letter case)."
+                except KeyError:
+                    return None
 
             if get_recommendations:
                 if movie_title:
-                    recommendations = content(movie_title, n=numbers_of_return)[:numbers_of_return]
-                    if isinstance(recommendations, str):
-                        st.error(recommendations)
+                    recommendations = content(movie_title, n=numbers_of_return)
+                    if recommendations is not None:
+                        st.write(pd.DataFrame(recommendations)[:numbers_of_return])
                     else:
-                        st.write(pd.DataFrame(recommendations))
+                        st.warning('The movie you entered is not found in our database. '
+                                   'Please make sure you have entered the correct movie title (including letter case).')
                 else:
                     st.warning('Please enter a movie title.')
 
     with mid:
         with st.expander("Collaborative Filtering"):
+
             user_id = st.number_input("Please input user id", step=1)
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=11)
             st.write("\n")
@@ -75,22 +78,22 @@ if option == "Get Recommendations":
                 try:
                     recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
                     return recommend
-                except:
-                    return "The user id you entered does not exist."
+                except KeyError:
+                    st.warning('The user id you entered does not exist.')
+                    return None
 
             if get_recommendations2:
-                if user_id:
-                    recommendations2 = cf(user_id, k=5, n=numbers_of_return)[:numbers_of_return]
-                    if isinstance(recommendations2, str):
-                        st.error(recommendations2)
-                    else:
-                        st.write(pd.DataFrame(recommendations2))
+                if user_id is not None:
+                    recommendations2 = cf(user_id, k=5, n=numbers_of_return)
+                    if recommendations2 is not None:
+                        st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
                 else:
                     st.warning('Please enter a user id.')
 
     with right:
         with st.expander("Hybrid"):
-            user_id2 = st.text_input("User id")
+
+            user_id2 = st.number_input("User id")
             movie_title2 = st.text_input("Movie title")
             numbers_of_return = st.slider('Numbers of Recommendations', 5, 30, 5, 5, key=12)
             get_recommendations3 = st.button('Get Recommendations-3 :tv:')
@@ -99,18 +102,18 @@ if option == "Get Recommendations":
                 try:
                     recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
                     return recommend
-                except:
-                    return "The user_id or movie you entered is not found in our database. Please make sure you have entered the correct information."
+                except KeyError:
+                    st.warning('The user id or movie you entered is not found in our database. '
+                               'Please make sure you have entered the correct information.')
+                    return None
 
             if get_recommendations3:
-                if user_id2 and movie_title2:
-                    recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)[:numbers_of_return]
-                    if isinstance(recommendations3, str):
-                        st.error(recommendations3)
-                    else:
-                        st.write(pd.DataFrame(recommendations3))
+                if user_id2 is not None and movie_title2:
+                    recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
+                    if recommendations3 is not None:
+                        st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
                 else:
-                    st.warning('Please enter a user id and a movie title.')
+                    st.warning('Please enter both a user id and a movie title.')
 
 if option == "EDA Parts":
     from PIL import Image
