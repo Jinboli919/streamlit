@@ -80,6 +80,7 @@ if option == "Get Recommendations":
                     recommend = movie_recommendation_system.get_recommendations_item(user_id, n=numbers_of_return)
                     return recommend
                 except KeyError:
+                    st.warning('The user id you entered does not exist.')
                     return None
 
             if get_recommendations2:
@@ -87,10 +88,6 @@ if option == "Get Recommendations":
                     recommendations2 = cf(user_id, k=5, n=numbers_of_return)
                     if recommendations2 is not None:
                         st.write(pd.DataFrame(recommendations2)[:numbers_of_return])
-                    else:
-                        st.warning('The user id you entered does not exist.')
-                else:
-                    st.warning('Please enter a user id.')
 
     with right:
         with st.expander("Hybrid"):
@@ -105,6 +102,8 @@ if option == "Get Recommendations":
                     recommend = movie_recommendation_system.hybrid(user_id2, movie_title2, n=numbers_of_return)
                     return recommend
                 except KeyError:
+                    st.warning('The user id or movie you entered is not found in our database. '
+                               'Please make sure you have entered the correct information.')
                     return None
 
             if get_recommendations3:
@@ -112,11 +111,6 @@ if option == "Get Recommendations":
                     recommendations3 = hy(user_id2, movie_title2, n=numbers_of_return)
                     if recommendations3 is not None:
                         st.write(pd.DataFrame(recommendations3)[:numbers_of_return])
-                    else:
-                        st.warning('The user id or movie you entered is not found in our database. '
-                                   'Please make sure you have entered the correct information.')
-                else:
-                    st.warning('Please enter a user id and a movie title.')
 
 if option == "EDA Parts":
     from PIL import Image
